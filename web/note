@@ -1,0 +1,56 @@
+springmvc和spring整合原理
+1.由于3.0的规范，web容器会在启动的时候扫苗每个包下面的web/web/META-INF/services/javax.servlet.ServletContainerInitializer文件
+2.文件当中会配置ServletContainerInitializer实现类，并且调用onStartup方法
+3.在spring-web的jar包中，加载SpringServletContainerInitializer类，并且调用onStartup方法
+4.根据@HandlesTypes({WebApplicationInitializer.class})会载入WebApplicationInitializer相关的类，及子类，并且将非抽象类实例化
+5.然后执行实例化的 WebApplicationInitializer的onStartup方法
+     a.AbstractContextLoaderInitializer  在调用onStartup方法时
+        1.首先是创建根容器createRootApplicationContext（）
+        2.创建一个监听器ContextLoaderListener，并且使用根容器作为构造参数，添加到servletContext当中（添加Listener组件），这样可以使用listener创建根容器
+     类似：
+    <!--配置spring上下文-->
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>/config/spring-context.xml</param-value>
+    </context-param>
+
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    b.AbstractDispatcherServletInitializer 在调用onStartup方法时
+      1.首先创建一个springmvc的子容器  createServletApplicationContext（）
+      2.创建dispatcherServlet然后添加到 servletContext中
+      3.添加一些filter组件到  servletContext中
+
+     类似：
+          <filter>
+             <filter-name>springSecurityFilterChain</filter-name>
+             <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+         </filter>
+         <filter-mapping>
+             <filter-name>springSecurityFilterChain</filter-name>
+             <url-pattern>/*</url-pattern>
+         </filter-mapping>
+
+         <servlet>
+             <servlet-name>springmvc</servlet-name>
+             <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+             <init-param>
+                 <param-name>contextConfigLocation</param-name>
+                 <param-value>/config/springmvc-context.xml</param-value>
+             </init-param>
+             <load-on-startup>1</load-on-startup>
+         </servlet>
+
+         <servlet-mapping>
+             <servlet-name>springmvc</servlet-name>
+             <url-pattern>/*</url-pattern>
+         </servlet-mapping>
+
+     c. AbstractAnnotationConfigDispatcherServletInitializer
+        1.AbstractAnnotationConfigDispatcherServletInitializer是AbstractDispatcherServletInitializer的子类
+        2.AbstractAnnotationConfigDispatcherServletInitializer的主要作用就是实现了两个创建容器的方法，createRootApplicationContext和createServletApplicationContext
+        3.实际上我们要想与spring整合，只需要继承AbstractAnnotationConfigDispatcherServletInitializer，告诉他我们spring容器和web容器的配置文件，并且告诉他我们的dispatchServlet
+          拦截的路径即可
+        4.详细参考springmvcAndSpring包下面的demo
