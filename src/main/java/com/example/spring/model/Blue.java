@@ -4,4 +4,7 @@ package com.example.spring.model;
  * Created by Administrator on 2019/1/13/013.
  */
 public class Blue {
+    public Blue() {
+        System.out.println("Blue构造");
+    }
 }
